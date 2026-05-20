@@ -45,9 +45,14 @@ python -m src.cli "SELECT COUNT(*) FROM orders"
 
 # 5. Get a free Groq API key at https://console.groq.com,
 #    copy .env.example to .env, and paste the key.
-```
 
-LLM integration and Streamlit UI are added in the next milestone.
+# 6. Ask the agent from the CLI
+python -m src.agent_cli "How many orders were delivered in 2018?"
+
+# 7. Or launch the chat UI with traces
+streamlit run app.py
+# Chat: http://localhost:8501   Traces: http://localhost:6006
+```
 
 ## Project structure
 
@@ -67,9 +72,9 @@ insight-agent/
 
 ## Milestones
 
-- [x] M0 — Scaffold + data loader + SQL tools (current)
-- [ ] M1 — LangGraph agent with `get_schema` + `run_sql` + reflection loop
-- [ ] M2 — Streamlit chat UI + Phoenix tracing
+- [x] M0 — Scaffold + data loader + SQL tools
+- [x] M1 — LangGraph agent with `get_schema` + `run_sql` + reflection loop
+- [x] M2 — Streamlit chat UI + Phoenix tracing
 - [ ] M3 — Chart-generation tool (`make_chart`)
 - [ ] M4 — Planner / executor / critic multi-agent split
 - [ ] M5 — Evaluation harness (golden Q&A set, LLM-as-judge)
