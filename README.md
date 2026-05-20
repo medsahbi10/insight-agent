@@ -1,25 +1,18 @@
 # Insight Agent
 
 [![CI](https://github.com/medsahbi10/insight-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/medsahbi10/insight-agent/actions/workflows/ci.yml)
+[![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-A conversational data-analyst agent that answers business questions over an e-commerce database. Built on LangGraph + Groq + DuckDB, fully open source.
+> A conversational data-analyst agent over a real Brazilian e-commerce warehouse.
+> Ask in natural language, get English answers, SQL, and charts back.
+> Built on LangGraph, served by open-weights models on Groq, traced with Arize Phoenix.
 
-## What it does
-
-Ask a business question in natural language → the agent inspects the schema, plans a query, writes SQL with safety guards, executes it, self-corrects on errors, optionally renders a chart, and explains the answer with citations to the SQL it ran.
-
-Example:
-```
-> Plot the top 8 product categories by total revenue in 2018 as a bar chart
-[agent] -> get_schema()
-[agent] -> make_chart(sql=..., kind='bar', title='Top 8 product categories by revenue (2018)')
-[tool]    Chart saved: charts/chart_xxxxxxxx.png. Bar chart of category vs revenue, 8 rows.
-[answer]  Here is the bar chart you asked for. SQL used: ...
-```
+---
 
 ## Sample outputs
 
-| Bar — categories by revenue | Line — orders per month |
+| Bar — top categories by revenue | Line — orders per month |
 |---|---|
 | ![Top categories](docs/screenshots/bar_top_categories_2018.png) | ![Orders per month](docs/screenshots/line_orders_per_month_2018.png) |
 
@@ -27,88 +20,176 @@ Example:
 |---|---|
 | ![Payment types](docs/screenshots/pie_payment_types.png) | ![Price vs freight](docs/screenshots/scatter_price_vs_freight.png) |
 
-Each image is produced by the same `make_chart` tool the agent calls at runtime.
+Each chart is produced by the agent's `make_chart` tool at runtime.
 
-## Stack
+---
 
-- **Agent framework**: LangGraph
-- **LLM**: OpenAI gpt-oss-120B (open-weights, Apache 2.0) served via Groq Cloud free tier. Swap to Ollama / vLLM / Llama / Qwen with a one-line provider change.
-- **Database**: DuckDB (analytical, single-file)
-- **UI**: Streamlit
-- **Observability**: Arize Phoenix (OpenInference / OpenTelemetry traces)
-- **Container**: Docker Compose
-- **CI**: GitHub Actions
+## Example interaction
+
+```
+> Plot the top 8 product categories by total revenue in 2018 as a bar chart
+
+[agent] -> get_schema()
+[agent] -> make_chart(sql='SELECT p.product_category_name AS category, ...',
+                      kind='bar', title='Top 8 product categories by revenue (2018)')
+[tool]    Chart saved: charts/chart_xxxxxxxx.png. Bar chart of category vs revenue, 8 rows.
+[answer]  Here is the bar chart you asked for. SQL used: ...
+```
+
+---
+
+## Features
+
+- **Schema-aware SQL agent** — introspects the warehouse, writes DuckDB SQL, self-corrects on errors via tool-result reflection
+- **Defense-in-depth safety** — regex blocks `INSERT/UPDATE/DELETE/DROP/...` *and* connections open read-only
+- **Multi-modal output** — `make_chart` tool renders bar / line / pie / scatter PNGs; Streamlit embeds them inline
+- **Multi-agent variant** — Planner → Executor → Critic with bounded revision loop and sub-graph composition
+- **Eval harness** — golden Q&A set + LLM-as-judge with Pydantic-structured scoring (91.7% baseline correctness on 12 questions)
+- **Full observability** — every LLM call and tool invocation traced via Arize Phoenix (OpenInference / OpenTelemetry)
+- **Production-shaped** — Dockerfile, docker-compose, GitHub Actions CI (ruff + pytest + image build)
+
+---
+
+## Tech stack
+
+| Layer | Choice | Why |
+|---|---|---|
+| Agent framework | **LangGraph** | Explicit state machine; sub-graph composition; broad recognition |
+| LLM | **gpt-oss-120B** (Apache 2.0) via Groq | Reliable structured tool calls, free tier, one-line provider swap |
+| Database | **DuckDB** | Analytical, single-file, native CSV ingestion, sub-ms queries |
+| UI | **Streamlit** | One-file chat UI with progressive trace + inline charts |
+| Observability | **Arize Phoenix** | OTel-native, in-process server, sub-second trace UI |
+| Charts | **matplotlib** | Headless `Agg` backend, four chart kinds in one tool |
+| Eval | **Pydantic** structured output | Forced JSON schema → zero parsing brittleness |
+| Container | **Docker** + **docker-compose** | Reproducible builds; CI validates the image |
+| CI | **GitHub Actions** | Ruff lint → pytest → docker build, with remote-debug annotations |
+
+---
 
 ## Dataset
 
-[Olist Brazilian E-Commerce](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce) — ~100K orders across 9 tables (orders, order_items, products, customers, sellers, reviews, payments, geolocation, category translations), 2016–2018.
+[Olist Brazilian E-Commerce](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce) — ~100K real orders across 9 tables (orders, order_items, products, customers, sellers, reviews, payments, geolocation, category translations), 2016–2018, ~1.5M rows total.
+
+---
 
 ## Quickstart
 
+### 1. Install
+
 ```bash
-# 1. Install dependencies
+git clone https://github.com/medsahbi10/insight-agent.git
+cd insight-agent
+
 python -m venv .venv
-.venv\Scripts\activate
+# Windows PowerShell
+.venv\Scripts\Activate.ps1
+# Linux / macOS
+# source .venv/bin/activate
+
 pip install -r requirements.txt
-
-# 2. Download the Olist dataset from Kaggle and unzip into data/raw/
-#    https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce
-
-# 3. Load CSVs into DuckDB
-python scripts/load_data.py
-
-# 4. Verify with the CLI (no LLM yet)
-python -m src.cli "SELECT COUNT(*) FROM orders"
-
-# 5. Get a free Groq API key at https://console.groq.com,
-#    copy .env.example to .env, and paste the key.
-
-# 6. Ask the agent from the CLI
-python -m src.agent_cli "How many orders were delivered in 2018?"
-
-# 7. Or launch the chat UI with traces
-streamlit run app.py
-# Chat: http://localhost:8501   Traces: http://localhost:6006
 ```
 
-Alternatively, run the whole stack in containers:
+### 2. Configure
+
+```bash
+cp .env.example .env       # Windows: copy .env.example .env
+# Paste your Groq API key (free at https://console.groq.com) into .env
+```
+
+### 3. Load the data
+
+Download the 9 Olist CSVs from [Kaggle](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce) into `data/raw/`, then:
+
+```bash
+python scripts/load_data.py
+```
+
+~1.5M rows load into DuckDB in about 5 seconds.
+
+### 4. Run
+
+Three entry points — pick any:
+
+```bash
+# Single-agent CLI
+python -m src.agent_cli "How many orders were delivered in 2018?"
+
+# Multi-agent CLI (Planner → Executor → Critic)
+python -m src.multi_agent_cli "Which 5 sellers had the highest revenue in 2018, and from which state?"
+
+# Streamlit chat UI with inline charts + Phoenix tracing
+streamlit run app.py
+# → http://localhost:8501  (chat)
+# → http://localhost:6006  (traces)
+```
+
+Or run the whole stack in containers (no local Python needed):
 
 ```bash
 docker compose up --build
-# Chat: http://localhost:8501   Traces: http://localhost:6006
 ```
+
+### 5. Evaluate
+
+```bash
+python -m src.evals_cli                  # single-agent baseline, all 12 questions
+python -m src.evals_cli --agent multi    # multi-agent
+python -m src.evals_cli --agent both     # side-by-side comparison
+```
+
+**Single-agent baseline**: 11 / 12 correctness (91.7%), 12 / 12 clarity (100%), avg 8.6 s/question.
+
+---
 
 ## Project structure
 
 ```
 insight-agent/
+├── app.py                          # Streamlit chat UI
+├── Dockerfile                      # python:3.12-slim with layer-cached deps
+├── docker-compose.yml              # one-command dev stack
+├── .github/workflows/ci.yml        # ruff → pytest → docker build
 ├── data/
-│   ├── raw/           # Olist CSVs (gitignored)
-│   └── duckdb/        # built warehouse (gitignored)
-├── scripts/
-│   └── load_data.py   # CSV -> DuckDB ingestion
+│   ├── raw/                        # 9 Olist CSVs (gitignored)
+│   └── duckdb/olist.duckdb         # built warehouse (gitignored)
+├── docs/screenshots/               # README chart gallery
+├── evals/
+│   ├── golden.jsonl                # 12 hand-verified Q&A pairs
+│   └── results/                    # eval run outputs (gitignored)
+├── scripts/load_data.py            # CSV → DuckDB ingestion
 ├── src/
-│   ├── db.py          # DuckDB connection + schema helpers
-│   ├── tools.py       # agent tools: get_schema, run_sql
-│   └── cli.py         # manual SQL runner (pre-agent)
+│   ├── db.py                       # DuckDB connection + schema helpers
+│   ├── tools.py                    # get_schema, run_sql, safety regex
+│   ├── charts.py                   # render_chart (PNG: bar/line/pie/scatter)
+│   ├── llm.py                      # provider-agnostic ChatModel factory
+│   ├── agent.py                    # single-agent LangGraph state machine
+│   ├── agent_cli.py                # CLI for single-agent
+│   ├── multi_agent.py              # Planner → Executor → Critic graph
+│   ├── multi_agent_cli.py          # CLI for multi-agent
+│   ├── observability.py            # Phoenix + OpenInference instrumentation
+│   ├── evals.py                    # LLM-as-judge + run_eval
+│   ├── evals_cli.py                # CLI for the eval harness
+│   └── cli.py                      # manual SQL runner (pre-agent baseline)
 └── tests/
+    ├── test_tools.py               # SQL safety-guard tests
+    └── test_imports.py             # import smoke tests
 ```
 
-## Milestones
+---
 
-- [x] M0 — Scaffold + data loader + SQL tools
-- [x] M1 — LangGraph agent with `get_schema` + `run_sql` + reflection loop
-- [x] M2 — Streamlit chat UI + Phoenix tracing
-- [x] M3 — `make_chart` tool (matplotlib bar/line/pie/scatter)
-- [x] M4 — Multi-agent split (planner → executor → critic)
-- [x] M5 — Eval harness (golden set + LLM-as-judge)
-- [x] M6 — Dockerfile + docker-compose + GitHub Actions CI
-- [ ] M3 — Chart-generation tool (`make_chart`)
-- [ ] M4 — Planner / executor / critic multi-agent split
-- [ ] M5 — Evaluation harness (golden Q&A set, LLM-as-judge)
-- [ ] M6 — Docker Compose + GitHub Actions CI
-- [ ] M7 — Semantic layer / metric definitions
+## Roadmap
+
+- [x] **M0** — Project scaffold, DuckDB warehouse, SQL safety guard
+- [x] **M1** — LangGraph single-agent with `get_schema` + `run_sql` + reflection loop
+- [x] **M2** — Streamlit chat UI + Arize Phoenix observability
+- [x] **M3** — `make_chart` tool (matplotlib bar / line / pie / scatter)
+- [x] **M4** — Multi-agent split: Planner → Executor → Critic with bounded revision
+- [x] **M5** — Eval harness: golden Q&A set + LLM-as-judge with structured scoring
+- [x] **M6** — Dockerfile + docker-compose + GitHub Actions CI
+- [ ] **M7** — Semantic layer (YAML metric registry for canonical business terms)
+
+---
 
 ## License
 
-MIT
+MIT — see [LICENSE](LICENSE).
