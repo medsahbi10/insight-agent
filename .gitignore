@@ -1,0 +1,18 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.env
+
+data/raw/*
+!data/raw/.gitkeep
+data/duckdb/*
+!data/duckdb/.gitkeep
+
+.idea/
+.vscode/
+*.duckdb
+*.duckdb.wal
+
+# Personal learning notes, not for publication
+guide.md
