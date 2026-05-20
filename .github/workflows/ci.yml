@@ -31,8 +31,11 @@ jobs:
       - name: Ruff (syntax + undefined names)
         run: ruff check src/ scripts/ tests/ --select=E9,F63,F7,F82,F821 --output-format=github
 
+      - name: Show installed packages
+        run: pip freeze
+
       - name: Pytest
-        run: pytest tests/ -v
+        run: pytest tests/ -v --tb=long -rA
 
   docker-build:
     runs-on: ubuntu-latest
