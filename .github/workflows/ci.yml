@@ -35,7 +35,21 @@ jobs:
         run: pip freeze
 
       - name: Pytest
-        run: pytest tests/ -v --tb=long -rA
+        id: pytest_step
+        continue-on-error: true
+        run: pytest tests/ -v --tb=long -rA 2>&1 | tee pytest_output.txt
+
+      - name: Surface pytest output as annotations
+        if: steps.pytest_step.outcome == 'failure'
+        run: |
+          echo "::group::Full pytest output"
+          cat pytest_output.txt
+          echo "::endgroup::"
+          tail -40 pytest_output.txt | while IFS= read -r line; do
+            safe=$(echo "$line" | tr -d '\r' | head -c 500)
+            echo "::error::$safe"
+          done
+          exit 1
 
   docker-build:
     runs-on: ubuntu-latest
