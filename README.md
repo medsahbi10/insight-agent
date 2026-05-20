@@ -1,21 +1,36 @@
 # Insight Agent
 
-A conversational data-analyst agent that answers business questions over an e-commerce database. Built on LangGraph + Ollama + DuckDB, fully open source.
+A conversational data-analyst agent that answers business questions over an e-commerce database. Built on LangGraph + Groq + DuckDB, fully open source.
 
 ## What it does
 
-Ask a business question in natural language → the agent inspects the schema, plans a query, writes SQL with safety guards, executes it, self-corrects on errors, generates a chart, and explains the answer with citations to the SQL it ran.
+Ask a business question in natural language → the agent inspects the schema, plans a query, writes SQL with safety guards, executes it, self-corrects on errors, optionally renders a chart, and explains the answer with citations to the SQL it ran.
 
 Example:
 ```
-> Which product categories had the highest review scores in 2018?
-[agent inspects schema -> writes SQL -> runs it -> charts top 10]
+> Plot the top 8 product categories by total revenue in 2018 as a bar chart
+[agent] -> get_schema()
+[agent] -> make_chart(sql=..., kind='bar', title='Top 8 product categories by revenue (2018)')
+[tool]    Chart saved: charts/chart_xxxxxxxx.png. Bar chart of category vs revenue, 8 rows.
+[answer]  Here is the bar chart you asked for. SQL used: ...
 ```
+
+## Sample outputs
+
+| Bar — categories by revenue | Line — orders per month |
+|---|---|
+| ![Top categories](docs/screenshots/bar_top_categories_2018.png) | ![Orders per month](docs/screenshots/line_orders_per_month_2018.png) |
+
+| Pie — payment types | Scatter — price vs freight |
+|---|---|
+| ![Payment types](docs/screenshots/pie_payment_types.png) | ![Price vs freight](docs/screenshots/scatter_price_vs_freight.png) |
+
+Each image is produced by the same `make_chart` tool the agent calls at runtime.
 
 ## Stack
 
 - **Agent framework**: LangGraph
-- **LLM**: Llama 3.3 70B (open-weights, Llama 3 License) served via Groq Cloud free tier. Swap to Ollama / vLLM with a one-line provider change.
+- **LLM**: OpenAI gpt-oss-120B (open-weights, Apache 2.0) served via Groq Cloud free tier. Swap to Ollama / vLLM / Llama / Qwen with a one-line provider change.
 - **Database**: DuckDB (analytical, single-file)
 - **UI**: Streamlit
 - **Observability**: Arize Phoenix (OpenInference / OpenTelemetry traces)
