@@ -1,5 +1,7 @@
 # Insight Agent
 
+[![CI](https://github.com/medsahbi10/insight-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/medsahbi10/insight-agent/actions/workflows/ci.yml)
+
 A conversational data-analyst agent that answers business questions over an e-commerce database. Built on LangGraph + Groq + DuckDB, fully open source.
 
 ## What it does
@@ -69,6 +71,13 @@ streamlit run app.py
 # Chat: http://localhost:8501   Traces: http://localhost:6006
 ```
 
+Alternatively, run the whole stack in containers:
+
+```bash
+docker compose up --build
+# Chat: http://localhost:8501   Traces: http://localhost:6006
+```
+
 ## Project structure
 
 ```
@@ -90,6 +99,10 @@ insight-agent/
 - [x] M0 — Scaffold + data loader + SQL tools
 - [x] M1 — LangGraph agent with `get_schema` + `run_sql` + reflection loop
 - [x] M2 — Streamlit chat UI + Phoenix tracing
+- [x] M3 — `make_chart` tool (matplotlib bar/line/pie/scatter)
+- [x] M4 — Multi-agent split (planner → executor → critic)
+- [x] M5 — Eval harness (golden set + LLM-as-judge)
+- [x] M6 — Dockerfile + docker-compose + GitHub Actions CI
 - [ ] M3 — Chart-generation tool (`make_chart`)
 - [ ] M4 — Planner / executor / critic multi-agent split
 - [ ] M5 — Evaluation harness (golden Q&A set, LLM-as-judge)
