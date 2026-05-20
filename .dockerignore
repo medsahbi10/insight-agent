@@ -1,0 +1,28 @@
+.git/
+.github/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+
+# secrets
+.env
+
+# runtime artifacts
+data/
+charts/
+evals/results/*
+!evals/results/.gitkeep
+docs/
+
+# personal learning notes
+guide.md
+
+# build artifacts
+*.duckdb
+*.duckdb.wal
+
+# editor / IDE
+.idea/
+.vscode/

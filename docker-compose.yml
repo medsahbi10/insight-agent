@@ -1,0 +1,15 @@
+services:
+  insight-agent:
+    build:
+      context: .
+    image: insight-agent:dev
+    container_name: insight-agent
+    ports:
+      - "8501:8501"  # Streamlit chat
+      - "6006:6006"  # Phoenix UI
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+      - ./charts:/app/charts
+    restart: unless-stopped
