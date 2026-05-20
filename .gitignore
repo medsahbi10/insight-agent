@@ -19,3 +19,7 @@ guide.md
 
 # Generated chart artifacts
 charts/
+
+# Eval run artifacts (golden.jsonl is committed, results/ are local-only)
+evals/results/*
+!evals/results/.gitkeep

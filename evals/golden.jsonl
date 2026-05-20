@@ -1,0 +1,12 @@
+{"id": 1, "category": "simple_count", "question": "How many orders were delivered in 2018?", "reference_answer": "Approximately 55,273 orders were delivered in 2018."}
+{"id": 2, "category": "simple_count", "question": "How many customers are in the dataset?", "reference_answer": "There are 99,441 customers."}
+{"id": 3, "category": "simple_count", "question": "How many distinct products are in the catalog?", "reference_answer": "There are 32,951 products."}
+{"id": 4, "category": "simple_count", "question": "How many sellers are in the dataset?", "reference_answer": "There are 3,095 sellers."}
+{"id": 5, "category": "aggregation", "question": "What is the average price per order item?", "reference_answer": "The average price per order item is approximately R$ 120.65."}
+{"id": 6, "category": "aggregation", "question": "What was the total revenue (sum of item prices) in 2018?", "reference_answer": "The total revenue in 2018 was approximately R$ 7.39 million (around 7,386,050)."}
+{"id": 7, "category": "join", "question": "What is the top product category by total number of order items?", "reference_answer": "The top category is 'cama_mesa_banho' (bed, bath, table) with approximately 11,115 items."}
+{"id": 8, "category": "join", "question": "What is the most common payment type, and how many orders used it?", "reference_answer": "Credit card is the most common payment type with approximately 76,795 payments."}
+{"id": 9, "category": "multi_step", "question": "Among Brazilian states with at least 100 reviews, which one has the highest average review score?", "reference_answer": "Amazonas (AM) has the highest average review score (~4.18), among states with >=100 reviews. PR, SP, MG, and RS are very close (4.13-4.18)."}
+{"id": 10, "category": "multi_step", "question": "What is the average delivery time in days from purchase to delivery?", "reference_answer": "The average delivery time is approximately 12.5 days."}
+{"id": 11, "category": "join", "question": "What are the top 3 cities by total number of customer orders?", "reference_answer": "Sao Paulo (~15,540 orders), Rio de Janeiro (~6,882 orders), Belo Horizonte (~2,773 orders)."}
+{"id": 12, "category": "chart", "question": "Show me a bar chart of the top 5 cities by order count", "reference_answer": "A bar chart should be produced (kind=bar) with the top 5 cities. Top city is Sao Paulo with ~15,540 orders.", "expects_chart": true}
