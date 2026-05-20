@@ -6,8 +6,12 @@ Run with:
 
 from __future__ import annotations
 
+import re
+
 import streamlit as st
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
+
+CHART_PATH_RE = re.compile(r"Chart saved: (.+?\.png)")
 
 from src.agent import SYSTEM_PROMPT, build_graph
 from src.observability import init_phoenix, phoenix_error
@@ -101,6 +105,9 @@ if question:
                         )
                         with status:
                             st.markdown(f"```\n{preview}\n```")
+                            chart_match = CHART_PATH_RE.search(content)
+                            if chart_match:
+                                st.image(chart_match.group(1))
                 seen = len(messages)
             status.update(label="Done", state="complete", expanded=False)
         except Exception as exc:  # noqa: BLE001

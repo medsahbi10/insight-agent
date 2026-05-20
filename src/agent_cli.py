@@ -8,9 +8,17 @@ from __future__ import annotations
 
 import sys
 
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
+# Windows console default is cp1252; LLM responses can include non-Latin-1
+# characters (e.g. narrow no-break space  ) that crash the encoder.
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:  # noqa: BLE001
+        pass
 
-from src.agent import run_question
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage  # noqa: E402
+
+from src.agent import run_question  # noqa: E402
 
 
 def _truncate(text: str, limit: int = 600) -> str:

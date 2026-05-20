@@ -10,7 +10,13 @@ from __future__ import annotations
 import argparse
 import sys
 
-from src.tools import get_schema, run_sql
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:  # noqa: BLE001
+        pass
+
+from src.tools import get_schema, run_sql  # noqa: E402
 
 
 def main() -> int:

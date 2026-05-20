@@ -9,7 +9,7 @@ from langchain_groq import ChatGroq
 
 load_dotenv()
 
-DEFAULT_MODEL = "llama-3.3-70b-versatile"
+DEFAULT_MODEL = "openai/gpt-oss-120b"
 
 
 def build_chat_model(temperature: float = 0.0) -> ChatGroq:

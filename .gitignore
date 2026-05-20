@@ -16,3 +16,6 @@ data/duckdb/*
 
 # Personal learning notes, not for publication
 guide.md
+
+# Generated chart artifacts
+charts/

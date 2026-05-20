@@ -18,6 +18,7 @@ from langchain_core.tools import tool
 from langgraph.graph import END, START, MessagesState, StateGraph
 from langgraph.prebuilt import ToolNode
 
+from src.charts import render_chart as _render_chart_impl
 from src.llm import build_chat_model
 from src.tools import get_schema as _get_schema_impl
 from src.tools import run_sql as _run_sql_impl
@@ -26,19 +27,29 @@ SYSTEM_PROMPT = """You are a careful data analyst working with the Olist Brazili
 
 Tools:
 - get_schema(): returns all tables and their columns. Call this FIRST if you do not already know the schema.
-- run_sql(query): executes a read-only SELECT query. INSERT/UPDATE/DELETE/DDL are blocked.
+- run_sql(query): executes a read-only SELECT query. INSERT/UPDATE/DELETE/DDL are blocked. Use this when a tabular or numeric answer is enough.
+- make_chart(sql, kind, title, x_col, y_col): runs a SELECT and renders a PNG chart.
+    kind ∈ {bar, line, pie, scatter}. Pick:
+      - bar: comparing categories (e.g. revenue by state, count by category)
+      - line: trends over time (e.g. orders per month)
+      - pie: parts of a whole when there are <=6 slices
+      - scatter: relationships between two numeric variables
+    The SQL should return the data to plot, typically two columns: x then y.
+    Defaults: x_col = first column, y_col = second column.
 
 Workflow:
 1. If you do not know the schema yet, call get_schema().
-2. Write a single SQL query that answers the question. Prefer simple, correct SQL over clever SQL.
-3. Call run_sql(query).
-4. If run_sql returns an error message starting with "ERROR", READ the error, fix the query, and call run_sql again. Typical fixes: wrong column name, wrong table, missing join.
-5. Once results are available, give a concise English answer and quote the SQL you used.
+2. Decide if the user wants a chart (words like "plot", "chart", "visualize", "graph", "show me", or comparisons across many categories) or a tabular answer.
+3. Write a single SQL query. Prefer simple, correct SQL over clever SQL.
+4. If charting: call make_chart(sql=..., kind=..., title=..., x_col=..., y_col=...).
+   Otherwise: call run_sql(query=...).
+5. If a tool returns a string starting with "ERROR", READ the error, fix the query, and retry.
+6. Once results are available, give a concise English answer. Quote the SQL you ran. If a chart was produced, mention it was saved.
 
 SQL notes:
 - Dialect is DuckDB. Use EXTRACT(YEAR FROM ts), DATE_TRUNC('year', ts), etc.
 - Timestamps are ISO strings; treat them as TIMESTAMP.
-- Always LIMIT large result sets.
+- For charts, LIMIT to the top N rows that fit visually (e.g. LIMIT 10 for bar charts of categories).
 """
 
 
@@ -63,7 +74,40 @@ def run_sql(query: str) -> str:
     return result.to_markdown()
 
 
-TOOLS = [get_schema, run_sql]
+@tool
+def make_chart(
+    sql: str,
+    kind: Literal["bar", "line", "pie", "scatter"] = "bar",
+    title: str = "",
+    x_col: str | None = None,
+    y_col: str | None = None,
+) -> str:
+    """Render a chart from a SELECT query as a PNG image.
+
+    Args:
+        sql: SELECT statement returning the data to plot (typically 2 columns: x, y).
+        kind: One of bar, line, pie, scatter. Pick the type that fits the question.
+        title: Chart title.
+        x_col: Column name for the x axis. Defaults to the first column.
+        y_col: Column name for the y axis. Defaults to the second column.
+
+    Returns a status string. On success it includes "Chart saved: <path>" so the UI
+    can render it inline. On failure it returns a string starting with "ERROR".
+    """
+    try:
+        info = _render_chart_impl(sql, kind=kind, title=title, x_col=x_col, y_col=y_col)
+    except ValueError as exc:
+        return f"ERROR (chart): {exc}"
+    except Exception as exc:  # noqa: BLE001
+        return f"ERROR (chart): {exc}"
+    return (
+        f"Chart saved: {info['path']}. "
+        f"{info['kind'].capitalize()} chart of {info['x_col']} vs {info['y_col']}, "
+        f"{info['rows']} row(s)."
+    )
+
+
+TOOLS = [get_schema, run_sql, make_chart]
 
 
 def build_graph():
