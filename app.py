@@ -10,7 +10,7 @@ import streamlit as st
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 
 from src.agent import SYSTEM_PROMPT, build_graph
-from src.observability import init_phoenix
+from src.observability import init_phoenix, phoenix_error
 
 st.set_page_config(page_title="Insight Agent", page_icon="📊", layout="wide")
 
@@ -38,7 +38,12 @@ with st.sidebar:
         st.markdown(f"[Open Phoenix traces ↗]({PHOENIX_URL})")
         st.caption("Every question produces a full LLM + tool-call trace.")
     else:
-        st.caption("Phoenix is disabled or unavailable.")
+        err = phoenix_error()
+        if err:
+            st.error("Phoenix init failed")
+            st.caption(err)
+        else:
+            st.caption("Phoenix is disabled.")
     st.divider()
     if st.button("Clear chat", use_container_width=True):
         st.session_state.history = []
